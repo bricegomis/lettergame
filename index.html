@@ -1,72 +1,17 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
-  </head>
-  <body>
-    <script>
-      class Alphabet extends Phaser.Scene {
-        timedEvent;
-        alphabet = [];
-        loop = 5;
-        letters = [];
-        preload() {
-          // preload images
-          for (let i = 97; i <= 122; i++) {
-            let letter = String.fromCharCode(i);
-            this.alphabet.push(letter);
-            this.load.image(letter, "/images/png/" + letter + ".png");
-          }
-        }
-        create() {
-          // Call a method every loop seconds
-          this.timedEvent = this.time.addEvent({
-            delay: this.loop * 1000,
-            callback: this.createRandomLetter,
-            callbackScope: this,
-            loop: true,
-          });
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/style.css">
+    <title>Phaser Vue Template</title>
+</head>
 
-          this.input.keyboard.on("keydown", (event) => {
-            this.clickOnLetter(event.key);
-          });
-        }
-        createRandomLetter() {
-          let x = Phaser.Math.Between(0, config.width);
-          let y = Phaser.Math.Between(0, config.height);
-          var letter = String.fromCharCode(Phaser.Math.Between(0, 25) + 97);
-          const logo = this.physics.add.image(x, y, letter);
-          logo.setVelocity(100, 200);
-          logo.setBounce(1, 1);
-          logo.setCollideWorldBounds(true);
-          logo.title = letter;
-          this.letters.push(logo);
-          console.log("nb letters", this.letters.length);
-        }
-        clickOnLetter(letter) {
-          let lettersToDelete = this.letters.filter((_) => _.title === letter);
-          lettersToDelete.forEach((_) => _.destroy());
-
-          // Supprimer les objets du tableau global
-          this.letters = this.letters.filter(
-            (_) => !lettersToDelete.includes(_)
-          );
-        }
-      }
-      const config = {
-        type: Phaser.AUTO,
-        width: 800,
-        height: 600,
-        scene: Alphabet,
-        backgroundColor: "#efefef",
-        physics: {
-          default: "arcade",
-          arcade: {
-            gravity: { y: 200 },
-          },
-        },
-      };
-      const game = new Phaser.Game(config);
-    </script>
-  </body>
+<body>
+    <div id="app">
+        <div id="game-container"></div>
+    </div>
+    <script type="module" src="src/main.ts"></script>
+</body>
 </html>
