@@ -5,11 +5,12 @@ import { LetterBlock } from "../Models/LetterBlock";
 export class Game extends Scene {
     gameText: Phaser.GameObjects.Text;
     timedEvent: Phaser.Time.TimerEvent;
-    alphabet: string[] = [];
-    loop = 2;
+    remainingLetters: string[] = [];
+    loopInSec = 1;
     letters: LetterBlock[] = [];
     particleEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
     points: number = 0;
+    letterTexts: Phaser.GameObjects.Text[];
 
     constructor() {
         super("Game");
@@ -23,17 +24,76 @@ export class Game extends Scene {
         // preload letters images
         for (let i = 97; i <= 122; i++) {
             const letter = String.fromCharCode(i);
-            this.alphabet.push(letter);
-            this.load.image(letter, "letters/" + letter + ".png");
+            this.remainingLetters.push(letter);
+            // const letterText = this.add
+            // .text(10, 10, letter, {
+            //     fontFamily: "Arial Black",
+            //     fontSize: 30,
+            //     color: "#00a6ed",
+            // })
+            // .setStroke("#2d2d2d", 3)
+            // .setShadow(4, 4, "#000000", 8, true, false);
+            // this.letterTexts.push(letterText);
+            // const text = this.add.text(100, 0, 'Phaser 3', { font: '32px Arial', fill: '#00ff00' });
+            // const text2 = this.add.text(100, -100, 'Phaser 3', { font: '32px Arial', fill: '#ffff00' });
+
+            // const matterText = this.matter.add.gameObject(text, { shape: { type: 'polygon', sides: 8, radius: 64 } }).setFrictionAir(0.001).setBounce(0.9);
+            // const matterText2 = this.matter.add.gameObject(text2).setBounce(0.9);
         }
     }
     preloadGemmes() {
         this.load.atlas("flares", "flares/flares.png", "flares/flares.json");
     }
     create() {
-        this.createLetterLoop();
+        EventBus.on("speed_changed", this.onSpeedchanged, this);
+        this.refreshTimedLoop();
         this.createKeydownEvent();
+        // this.createLetters();
+        // container.body?.setVelocity(100, 200);
+        // container.body?.setBounce(1, 1);
+        // container.body?.setCollideWorldBounds(true);
+
         this.createParticles();
+    }
+    onSpeedchanged(speed: number) {
+        // console.log("onSpeedchanged", speed);
+        this.loopInSec = speed;
+    }
+    createLetter(letter: string) {
+        // Define the position
+        const x = Phaser.Math.Between(30, this.game.config.width as number - 50);
+        const y = -50;
+        const container = this.add.container(x, y);
+        const bg = this.add.rectangle(100, 0, 40, 50, 0xdddddd, 1);
+        bg.setOrigin(0.5);
+
+        // Création du texte
+        const text = this.add.text(100, 0, letter.toUpperCase(), {
+            fontFamily: "Arial",
+            fontSize: 32,
+            color: "#000000",
+        });
+        text.setOrigin(0.5);
+
+        // Ajout du fond et du texte au conteneur
+        container.add([bg, text]);
+
+        // Animation de déplacement
+        const tween:Phaser.Types.Tweens.TweenBuilderConfig = {
+            targets: container,
+            y: (this.game.config.height as number) - bg.height / 2, // Nouvelle position en y
+            duration: 2000, // Durée de l'animation en ms
+            onComplete: () => { letterBlock.isOnBottom = true; }
+        }
+        const anim = this.tweens.add(tween);
+        const letterBlock = {
+            anim: anim,
+            letter: letter,
+            container: container,
+            isOnBottom: false
+        };
+
+        this.letters.push();
     }
     createParticles() {
         this.particleEmitter = this.add.particles(0, 0, "flares", {
@@ -48,16 +108,18 @@ export class Game extends Scene {
     }
     createKeydownEvent() {
         this.input.keyboard?.on("keydown", (event: { key: string }) => {
-            this.clickOnLetter(event.key);
+            this.clickOnLetter(event.key.toUpperCase());
         });
     }
-    createLetterLoop() {
-        this.timedEvent = this.time.addEvent({
-            delay: this.loop * 1000,
+    refreshTimedLoop() {
+        const config = {
+            delay: this.loopInSec * 1000,
             callback: this.onLoop,
             callbackScope: this,
             loop: true,
-        });
+        };
+        if (this.timedEvent) this.timedEvent.reset(config);
+        else this.timedEvent = this.time.addEvent(config);
     }
     onLoop() {
         this.createRandomLetter();
@@ -65,33 +127,24 @@ export class Game extends Scene {
     update() {
         this.letters.forEach((_) => {
             const bottom = this.game.config.height as number;
-            if (_.img.y >= bottom - 10) {
-                _.img.setVelocity(0, 0); // stop
-                _.img.setAccelerationY(0); // stop
-                _.img.setGravity(0, 0); // stop
+            if (_.container.y >= bottom - 10) {
+                console.log(_.anim)
                 _.isOnBottom = true;
             }
         });
     }
     createRandomLetter() {
-        // Define the position
-        const x = Phaser.Math.Between(0, this.game.config.width as number);
-        const y = 0; // Phaser.Math.Between(0, config.height);
+        if (this.remainingLetters.length <= 0) return;
 
-        const letter = String.fromCharCode(Phaser.Math.Between(0, 25) + 97);
-        const img = this.physics.add.image(x, y, letter);
-        // logo.title = letter;
-        // img.setAccelerationY(10); // Decrease acceleration
-        img.setGravity(0, -30); // Decrease gravity
-        // img.setVelocity(0, 2); // Decrease velocity
-        img.setOrigin(0, 1);
-        img.setTint(0x000000);
-        const letterBlock = new LetterBlock(img, letter);
-        this.letters.push(letterBlock);
+        const randomIndex = Math.floor(
+            Math.random() * this.remainingLetters.length
+        );
+        const letter = this.remainingLetters.splice(randomIndex, 1)[0];
+        this.createLetter(letter);
     }
     clickOnLetter(letter: string) {
         const lettersToDelete = this.letters.filter((_) => _.letter === letter);
-        lettersToDelete.forEach((_) => _.img.destroy());
+        lettersToDelete.forEach((_) => _.container?.destroy());
         // Supprimer les objets du tableau global
         this.letters = this.letters.filter((_) => !lettersToDelete.includes(_));
         if (lettersToDelete.length <= 0) return;
@@ -103,8 +156,8 @@ export class Game extends Scene {
     }
     createGemmeOnLetter(letter: LetterBlock) {
         this.particleEmitter.emitParticleAt(
-            letter.img.x,
-            letter.img.y,
+            letter.container.x,
+            letter.container.y,
             !letter.isOnBottom ? 4 : 2
         );
     }

@@ -36,8 +36,6 @@ export class Preloader extends Scene
 
         this.load.image('logo', 'logo.png');
         this.load.image('star', 'star.png');
-
-        console.log("preloader preload")
     }
 
     create ()
@@ -47,6 +45,5 @@ export class Preloader extends Scene
 
         //  Move to the MainMenu. You could also swap this for a Scene Transition, such as a camera fade.
         this.scene.start('Game');
-        console.log("preload create")
     }
 }

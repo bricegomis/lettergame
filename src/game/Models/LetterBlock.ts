@@ -1,10 +1,11 @@
 export class LetterBlock {
-    img: Phaser.Physics.Arcade.Image;
+    anim: Phaser.Tweens.Tween;
+    container: Phaser.GameObjects.Container;
     letter: string;
     isOnBottom: boolean;
 
-    constructor(img: Phaser.Physics.Arcade.Image, letter: string) {
-        this.img = img;
+    constructor(letter: string) {
+        // this.img = img;
         this.letter = letter;
     }
 }
