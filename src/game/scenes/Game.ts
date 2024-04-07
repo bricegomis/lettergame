@@ -3,6 +3,7 @@ import { Scene } from "phaser";
 class LetterBlock {
     img: Phaser.Physics.Arcade.Image;
     letter: string;
+    isOnBottom: boolean;
 
     constructor(img: Phaser.Physics.Arcade.Image, letter: string) {
         this.img = img;
@@ -18,29 +19,31 @@ export class Game extends Scene {
     alphabet: string[] = [];
     loop = 2;
     letters: LetterBlock[] = [];
+    particleEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
+    points: number;
+    pointsText: Phaser.GameObjects.Text;
 
     constructor() {
         super("Game");
+        this.points = 0;
     }
     preload() {
+        this.load.setPath("assets");
         this.preloadSubmarine();
         this.preloadLetters();
         this.preloadGemmes();
     }
     preloadSubmarine() {
-        this.load.setPath("assets/submarine/");
-
         // preload background
         this.load.atlas(
             "sea",
-            "seacreatures_json.png",
-            "seacreatures_json.json"
+            "submarine/seacreatures_json.png",
+            "submarine/seacreatures_json.json"
         );
-        this.load.image("undersea", "undersea.jpg");
-        this.load.image("coral", "seabed.png");
+        this.load.image("undersea", "submarine/undersea.jpg");
+        this.load.image("coral", "submarine/seabed.png");
     }
     preloadLetters() {
-        this.load.setPath("assets/");
         // preload letters images
         for (let i = 97; i <= 122; i++) {
             const letter = String.fromCharCode(i);
@@ -49,20 +52,34 @@ export class Game extends Scene {
         }
     }
     preloadGemmes() {
-        this.load.setPath("assets/gemmes/");
-        this.load.atlas('gems', 'gems.png', 'gems.json');
+        this.load.atlas("gems", "gemmes/gems.png", "gemmes/gems.json");
+        this.load.atlas("flares", "flares/flares.png", "flares/flares.json");
     }
     create() {
         this.camera = this.cameras.main;
         this.camera.setBackgroundColor(0xeeeeee);
         this.createBackgroundAnimation();
-
-        this.anims.create({ key: 'ruby', frames: this.anims.generateFrameNames('gems', { prefix: 'ruby_', end: 6, zeroPad: 4 }), repeat: -1 });
-
-        // Call a method every loop seconds
         this.createLoop();
-
         this.createKeydownEvent();
+        this.createParticles();
+        this.createTexts();
+    }
+    createTexts() {
+        this.pointsText = this.add
+            .text(10, 10, "Points: ", { fontFamily: 'Arial Black', fontSize: 30, color: '#00a6ed' })
+            .setStroke("#2d2d2d", 3)
+            .setShadow(4, 4, "#000000", 8, true, false);
+    }
+    createParticles() {
+        this.particleEmitter = this.add.particles(0, 0, "flares", {
+            frame: ["red", "yellow", "green"],
+            lifespan: 500,
+            speed: { min: 150, max: 250 },
+            scale: { start: 0.8, end: 0 },
+            gravityY: 150,
+            blendMode: "ADD",
+            emitting: false,
+        });
     }
     createKeydownEvent() {
         this.input.keyboard?.on("keydown", (event: { key: string }) => {
@@ -83,8 +100,9 @@ export class Game extends Scene {
     update() {
         this.letters.forEach((_) => {
             const bottom = this.game.config.height as number;
-            if (_.y >= bottom - 10) {
+            if (_.img.y >= bottom - 10) {
                 _.img.setVelocity(0, 0); // stop
+                _.isOnBottom = true;
             }
         });
     }
@@ -184,49 +202,20 @@ export class Game extends Scene {
         const lettersToDelete = this.letters.filter((_) => _.letter === letter);
         lettersToDelete.forEach((_) => _.img.destroy());
         // Supprimer les objets du tableau global
-        this.letters = this.letters.filter(
-            (_) => !lettersToDelete.includes(_)
-        );
+        this.letters = this.letters.filter((_) => !lettersToDelete.includes(_));
         if (lettersToDelete.length <= 0) return;
-        this.createGemme(lettersToDelete[0].img.x, lettersToDelete[0].img.y);
+
+        this.points += lettersToDelete[0].isOnBottom ? 10 : 50;
+        this.pointsText.setText(`Points: ${this.points}`);
+        this.createGemmeOnLetter(lettersToDelete[0]);
     }
-
-    createGemme(x: number, y: number) {
-        // this.anims.create({ key: 'square', frames: this.anims.generateFrameNames('gems', { prefix: 'square_', end: 14, zeroPad: 4 }), repeat: -1 });
-        ///x = y = 0;
-        this.add.sprite(x, y, "gems").play("ruby");
-        // this.make.sprite({
-        //     key: 'gems',
-        //     x: { randInt: x },
-        //     y: { randInt: y },
-        //     scale: { randFloat: 1 },
-        //     anims: 'ruby'
-        // });
-
-        //  A more complex animation config object.
-        //  This time with a call to delayedPlay that's a function.
-        // const config2 = {
-        //     key: 'gems',
-        //     frame: 'square_0000',
-        //     x: { randInt: [0, 800] },
-        //     y: { randInt: [300, 600] },
-        //     scale: { randFloat: [0.5, 1.5] },
-        //     // anims: {
-        //     //     key: 'square',
-        //     //     repeat: -1,
-        //     //     repeatDelay: { randInt: [1000, 4000] },
-        //     //     delayedPlay: function () {
-        //     //         return Math.random() * 6000;
-        //     //     }
-        //     // }
-        // };
-
-        //  Make 16 sprites using the config above
-        // for (let i = 0; i < 16; i++) {
-        // this.make.sprite(config2);
-        // }
+    createGemmeOnLetter(letter: LetterBlock) {
+        this.particleEmitter.emitParticleAt(
+            letter.img.x,
+            letter.img.y,
+            !letter.isOnBottom ? 4 : 2
+        );
     }
-
     changeScene() {
         this.scene.start("GameOver");
     }
