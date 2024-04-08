@@ -18,9 +18,6 @@ export class Submarine extends Phaser.Scene {
     create() {
         this.add.image(400, 300, "undersea");
 
-        //  Create the Animations
-        //  These are stored globally, and can be used by any Sprite
-
         //  In the texture atlas the jellyfish uses the frame names blueJellyfish0000 to blueJellyfish0032
         //  So we can use the handy generateFrameNames function to create this for us (and so on)
         this.createFish(400, 300, "jellyfish", "blueJellyfish", 32, 1, -45);
@@ -44,6 +41,8 @@ export class Submarine extends Phaser.Scene {
         gravityY: number = -50
     ) {
         const jellyfish = this.physics.add.sprite(x, y, "sea");
+        //  Create the Animations
+        //  These are stored globally, and can be used by any Sprite
         this.anims.create({
             key: key,
             frames: this.anims.generateFrameNames("sea", {

@@ -1,3 +1,5 @@
+@font-face { font-family: "supermario"; src: url("assets/supermario.ttf") format("opentype"); }
+
 body {
     margin: 0;
     padding: 0;
